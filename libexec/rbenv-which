@@ -27,6 +27,20 @@ remove_from_path() {
   echo "${result#:}"
 }
 
+prepend_gem_bin_path_to_path() {
+  local dirs="$(gem_bin_path)"
+  [ -n "$dirs" ] || { echo "$PATH"; return $?; }
+  echo "$dirs:$PATH"
+}
+
+gem_bin_path() {
+  local path=$(gem env gempath 2>/dev/null)
+  [ -n "$path" ] || return 0
+  path="$path:"
+  path=${path//:/\/bin:}
+  echo "${path%:}"
+}
+
 RBENV_COMMAND="$1"
 
 if [ -z "$RBENV_COMMAND" ]; then
@@ -38,6 +52,7 @@ RBENV_VERSION="${RBENV_VERSION:-$(rbenv-version-name)}"
 
 if [ "$RBENV_VERSION" = "system" ]; then
   PATH="$(remove_from_path "${RBENV_ROOT}/shims")"
+  PATH="$(prepend_gem_bin_path_to_path)"
   RBENV_COMMAND_PATH="$(command -v "$RBENV_COMMAND" || true)"
 else
   RBENV_COMMAND_PATH="${RBENV_ROOT}/versions/${RBENV_VERSION}/bin/${RBENV_COMMAND}"
